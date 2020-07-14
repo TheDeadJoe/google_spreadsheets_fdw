@@ -23,7 +23,7 @@ def pg_date_to_gs_date(val: date) -> float:
 
 
 def gs_date_to_pg_date(val: float) -> date:
-    ordinal = datetime(1899, 12, 30).toordinal() + int(val) - 2
+    ordinal = datetime(1899, 12, 30).toordinal() + int(val)
     dt = datetime.fromordinal(ordinal)
     h, m, s = float_to_hms(val % 1)
     return dt.replace(hour=h, minute=m, second=s).date()
