@@ -1,6 +1,6 @@
 # Google Spreadsheets FDW
 
-Multicorn-based PostgreSQL foreign data wrapper for Google Spreadsheets
+Multicorn based PostgreSQL foreign data wrapper for Google Spreadsheets
 
 ## Installation
 
@@ -38,8 +38,7 @@ create foreign table my_table (
     gskey 'zVshdGDuaQKKaQoXqNOwjeTWcxcUtOlSJDZoLeIMUsYx',
     keyfile '/path/to/credentials.json',
     sheet '0',
-    row_id 'id',
-    radixchar ','
+    row_id 'id'
 );
 ```
 
@@ -49,7 +48,6 @@ create foreign table my_table (
 - `keyfile` - path to Google Cloud Services credentials json file
 - `sheet` - index of a sheet
 - `row_id` - name of the column which value will be treated as an ID of the whole row
-- `radixchar` - for columns with float type (only if decimal mark if different than `.`) 
 
 ## Example
 
