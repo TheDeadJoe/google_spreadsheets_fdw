@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, date, time
 from typing import Any, Dict, List, Generator
 
 import gspread
@@ -8,6 +9,41 @@ from multicorn.utils import log_to_postgres as log
 from oauth2client.service_account import ServiceAccountCredentials
 
 __all__ = ['GoogleSpreadsheetFDW']
+
+
+def float_to_hms(f: float) -> (int, int, int):
+    h, r = divmod(f, 1)
+    m, r = divmod(r * 60, 1)
+    return int(h), int(m), int(r * 60),
+
+
+def pg_date_to_gs_date(val: date) -> float:
+    delta = datetime.combine(val, time()) - datetime(1899, 12, 30)
+    return float(delta.days) + (float(delta.seconds) / 86400)
+
+
+def gs_date_to_pg_date(val: float) -> date:
+    ordinal = datetime(1899, 12, 30).toordinal() + int(val) - 2
+    dt = datetime.fromordinal(ordinal)
+    h, m, s = float_to_hms(val % 1)
+    return dt.replace(hour=h, minute=m, second=s).date()
+
+
+pg_to_gs_converters = {
+    2950: lambda val: str(val) if val else None,  # uuid
+    1043: lambda val: str(val) if val else None,  # varchar
+    23: lambda val: int(val) if val else None,  # int
+    701: lambda val: float(val) if val else None,  # float
+    1082: lambda val: pg_date_to_gs_date(val) if val else None  # date
+}
+
+gs_to_pg_converters = {
+    2950: lambda val: str(val) if val else None,  # uuid
+    1043: lambda val: str(val) if val else None,  # varchar
+    23: lambda val: int(val) if val else None,  # int
+    701: lambda val: float(val) if val else None,  # float
+    1082: lambda val: gs_date_to_pg_date(val) if val else None  # date
+}
 
 
 class GoogleSpreadsheetFDW(ForeignDataWrapper):
@@ -41,24 +77,19 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             int(options["sheet"])
         )
 
-        self.converters = {
-            2950: lambda val: str(val),  # uuid
-            1043: lambda val: str(val),  # varchar
-            23: lambda val: int(val),  # int
-            701: lambda val: float(  # float
-                str(val).replace(options.get("radixchar", "."), ".")
-            ),
-        }
-
     def execute(self, quals: List, columns: List) -> Generator:
         log(
             "EXECUTE %s %s" % (repr(quals), repr(columns)),
             logging.DEBUG
         )
 
-        results = self.sheet.get_all_records()
+        results = self.sheet.get_all_values('UNFORMATTED_VALUE')
 
-        results = map(lambda row: self.__convert_row(row), results)
+        headers = results[0]
+
+        results = map(
+            lambda row: self.__convert_gs_row(row, headers), results[1:]
+        )
 
         for result in results:
             line = {}
@@ -72,9 +103,11 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             logging.DEBUG
         )
 
-        new_values = self.__convert_row(new_values)
+        new_values_converted = self.__convert_pg_row(new_values)
 
-        new_values_to_be_insert = [new_values.get(c) for c in self.columns]
+        new_values_to_be_insert = [
+            new_values_converted.get(c) for c in self.columns
+        ]
 
         self.sheet.append_row(new_values_to_be_insert)
 
@@ -88,7 +121,7 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             logging.DEBUG
         )
 
-        new_values = self.__convert_row(new_values)
+        new_values_converted = self.__convert_pg_row(new_values)
 
         row = self.__find_row_by_id(document_id)
 
@@ -97,7 +130,7 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
 
         cells = [
             Cell(row=row, col=self.__find_column_by_name(key), value=val)
-            for (key, val) in new_values.items()
+            for (key, val) in new_values_converted.items()
             if key != self.rowid_column
         ]
 
@@ -139,10 +172,12 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
 
         return cell.row
 
-    def __convert_value(self, name: str, value: Any) -> Any:
+    def __convert_value(
+            self, name: str, value: Any, converters: Dict[int, callable]
+    ) -> Any:
         column_definition = self.columns.get(name)
 
-        converter = self.converters.get(
+        converter = converters.get(
             column_definition.type_oid
         )
 
@@ -155,8 +190,18 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
 
         return converter(value)
 
-    def __convert_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
+    def __convert_gs_row(self, row: List, headers) -> Dict[str, Any]:
+        return dict({
+            header: self.__convert_value(
+                header, row[headers.index(header)], gs_to_pg_converters
+            )
+            for header in headers
+        })
+
+    def __convert_pg_row(self, row: Dict[str, Any]) -> Dict[str, Any]:
         return dict(map(
-            lambda kv: (kv[0], self.__convert_value(*kv)),
+            lambda kv: (kv[0], self.__convert_value(
+                kv[0], kv[1], pg_to_gs_converters
+            )),
             row.items()
         ))
