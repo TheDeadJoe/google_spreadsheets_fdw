@@ -129,7 +129,11 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             return None
 
         cells = [
-            Cell(row=row, col=self.__find_column_by_name(key), value=val)
+            Cell(
+                row=row,
+                col=self.__find_column_by_name(key),
+                value=val if val is not None else ''
+            )
             for (key, val) in new_values_converted.items()
             if key != self.rowid_column
         ]
