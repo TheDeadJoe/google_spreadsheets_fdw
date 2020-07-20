@@ -181,6 +181,9 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
     ) -> Any:
         column_definition = self.columns.get(name)
 
+        if column_definition is None:
+            return None
+
         converter = converters.get(
             column_definition.type_oid
         )
