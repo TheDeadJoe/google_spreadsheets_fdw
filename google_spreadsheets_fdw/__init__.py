@@ -195,7 +195,13 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
                 )
             )
 
-        return converter(value)
+        try:
+            return converter(value)
+        except ValueError:
+            log("Invalid value %s for column %s (%s)" % (
+                value, name, column_definition.type_name
+            ), logging.WARNING)
+            return None
 
     def __convert_gs_row(self, row: List, headers) -> Dict[str, Any]:
         return dict({
