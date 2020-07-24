@@ -57,6 +57,10 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
 
         self.row_id_column = options.get("row_id")
 
+        self.value_input_option = options.get(
+            "value_input_option", "USER_ENTERED"
+        )
+
         self.columns_names = [col.column_name for col in list(columns.values())]
 
         self.columns = columns
@@ -109,7 +113,10 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             new_values_converted.get(c) for c in self.columns
         ]
 
-        self.sheet.append_row(new_values_to_be_insert)
+        self.sheet.append_row(
+            values=new_values_to_be_insert,
+            value_input_option=self.value_input_option
+        )
 
         return new_values
 
@@ -138,7 +145,10 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             if key != self.rowid_column
         ]
 
-        self.sheet.update_cells(cells)
+        self.sheet.update_cells(
+            cell_list=cells,
+            value_input_option=self.value_input_option
+        )
 
         return new_values
 
