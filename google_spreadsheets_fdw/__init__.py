@@ -57,6 +57,10 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
 
         self.row_id_column = options.get("row_id")
 
+        self.formula_columns = list(filter(
+            None, options.get("formula_columns", "").split(",")
+        ))
+
         self.value_input_option = options.get(
             "value_input_option", "USER_ENTERED"
         )
@@ -142,7 +146,7 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
                 value=val if val is not None else ''
             )
             for (key, val) in new_values_converted.items()
-            if key != self.rowid_column
+            if key != self.rowid_column and key not in self.formula_columns
         ]
 
         self.sheet.update_cells(
