@@ -32,17 +32,21 @@ def gs_date_to_pg_date(val: float) -> date:
 pg_to_gs_converters = {
     2950: lambda val: str(val) if val else None,  # uuid
     1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
+    23: lambda val: int(val) if val else None,  # int4
+    20: lambda val: int(val) if val else None,  # int8
     701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: pg_date_to_gs_date(val) if val else None  # date
+    1082: lambda val: pg_date_to_gs_date(val) if val else None,  # date
+    1114: lambda val: pg_date_to_gs_date(val) if val else None  # timestamp
 }
 
 gs_to_pg_converters = {
     2950: lambda val: str(val) if val else None,  # uuid
     1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
+    23: lambda val: int(val) if val else None,  # int4
+    20: lambda val: int(val) if val else None,  # int8
     701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: gs_date_to_pg_date(val) if val else None  # date
+    1082: lambda val: gs_date_to_pg_date(val) if val else None,  # date
+    1114: lambda val: gs_date_to_pg_date(val) if val else None  # timestamp
 }
 
 
