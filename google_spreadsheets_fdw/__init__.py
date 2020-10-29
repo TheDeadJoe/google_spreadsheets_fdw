@@ -12,9 +12,16 @@ __all__ = ['GoogleSpreadsheetFDW']
 
 
 def float_to_hms(f: float) -> (int, int, int):
-    h, r = divmod(f, 1)
+    h, r = divmod(f * 24, 1)
     m, r = divmod(r * 60, 1)
     return int(h), int(m), int(r * 60),
+
+
+def hms_to_float(h: int, m: int, s: int) -> float:
+    f = s / 60
+    f = (f + m) / 60
+    f = (f + h) / 24
+    return f
 
 
 def pg_date_to_gs_date(val: date) -> float:
@@ -22,27 +29,40 @@ def pg_date_to_gs_date(val: date) -> float:
     return float(delta.days) + (float(delta.seconds) / 86400)
 
 
-def gs_date_to_pg_date(val: float) -> date:
+def pg_timestamp_to_gs_timestamp(val: datetime) -> float:
+    f = pg_date_to_gs_date(val.date())
+    return f + hms_to_float(val.hour, val.minute, val.second)
+
+
+def gs_timestamp_to_pg_timestamp(val: float) -> datetime:
     ordinal = datetime(1899, 12, 30).toordinal() + int(val)
     dt = datetime.fromordinal(ordinal)
     h, m, s = float_to_hms(val % 1)
-    return dt.replace(hour=h, minute=m, second=s).date()
+    return dt.replace(hour=h, minute=m, second=s)
+
+
+def gs_date_to_pg_date(val: float) -> date:
+    return gs_timestamp_to_pg_timestamp(val).date()
 
 
 pg_to_gs_converters = {
     2950: lambda val: str(val) if val else None,  # uuid
     1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
+    23: lambda val: int(val) if val else None,  # int4
+    20: lambda val: int(val) if val else None,  # int8
     701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: pg_date_to_gs_date(val) if val else None  # date
+    1082: lambda val: pg_date_to_gs_date(val) if val else None,  # date
+    1114: lambda val: pg_timestamp_to_gs_timestamp(val) if val else None  # timestamp
 }
 
 gs_to_pg_converters = {
     2950: lambda val: str(val) if val else None,  # uuid
     1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
+    23: lambda val: int(val) if val else None,  # int4
+    20: lambda val: int(val) if val else None,  # int8
     701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: gs_date_to_pg_date(val) if val else None  # date
+    1082: lambda val: gs_date_to_pg_date(val) if val else None,  # date
+    1114: lambda val: gs_timestamp_to_pg_timestamp(val) if val else None  # timestamp
 }
 
 
