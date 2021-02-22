@@ -30,19 +30,19 @@ def gs_date_to_pg_date(val: float) -> date:
 
 
 pg_to_gs_converters = {
-    2950: lambda val: str(val) if val else None,  # uuid
-    1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
-    701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: pg_date_to_gs_date(val) if val else None  # date
+    2950: lambda val: str(val) if val is not None else None,  # uuid
+    1043: lambda val: str(val) if val is not None else None,  # varchar
+    23: lambda val: int(val) if val is not None else None,  # int
+    701: lambda val: float(val) if val is not None else None,  # float
+    1082: lambda val: pg_date_to_gs_date(val) if val is not None else None  # date
 }
 
 gs_to_pg_converters = {
-    2950: lambda val: str(val) if val else None,  # uuid
-    1043: lambda val: str(val) if val else None,  # varchar
-    23: lambda val: int(val) if val else None,  # int
-    701: lambda val: float(val) if val else None,  # float
-    1082: lambda val: gs_date_to_pg_date(val) if val else None  # date
+    2950: lambda val: str(val) if val != '' else None,  # uuid
+    1043: lambda val: str(val) if val != '' else None,  # varchar
+    23: lambda val: int(val) if val != '' else None,  # int
+    701: lambda val: float(val) if val != '' else None,  # float
+    1082: lambda val: gs_date_to_pg_date(val) if val != '' else None  # date
 }
 
 
