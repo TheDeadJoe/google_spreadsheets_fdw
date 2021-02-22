@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="google_spreadsheets_fdw",
-    version="1.0.0",
+    version="1.0.1",
     author="TheDeadJoe",
     description="Multicorn-based PostgreSQL foreign data wrapper for Google Spreadsheets",
     long_description=long_description,
