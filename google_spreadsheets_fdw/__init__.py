@@ -65,8 +65,6 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
             "value_input_option", "USER_ENTERED"
         )
 
-        self.columns_names = [col.column_name for col in list(columns.values())]
-
         self.columns = columns
 
         scopes = [
@@ -84,6 +82,8 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
         ).get_worksheet(
             int(options["sheet"])
         )
+
+        self.columns_names = self.sheet.row_values(1)
 
     def execute(self, quals: List, columns: List) -> Generator:
         log(
@@ -114,7 +114,7 @@ class GoogleSpreadsheetFDW(ForeignDataWrapper):
         new_values_converted = self.__convert_pg_row(new_values)
 
         new_values_to_be_insert = [
-            new_values_converted.get(c) for c in self.columns
+            new_values_converted.get(c) for c in self.columns_names
         ]
 
         self.sheet.append_row(
