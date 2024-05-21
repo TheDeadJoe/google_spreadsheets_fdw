@@ -13,9 +13,9 @@ setuptools.setup(
     url="https://github.com/TheDeadJoe/google_spreadsheets_fdw",
     packages=setuptools.find_packages(),
     install_requires=[
-        'gspread==3.6.0',
-        'multicorn==1.4.0',
-        'oauth2client==4.1.3',
+        'gspread>=3.6.0,<4.0.0',
+        'multicorn>=1.4.0,<3.0.0',
+        'oauth2client==4.1.3,<5.0.0',
     ],
     classifiers=[
         "Programming Language :: Python :: 3.5",
